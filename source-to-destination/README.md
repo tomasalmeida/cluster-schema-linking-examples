@@ -112,7 +112,7 @@ Check the name is prefixed with `:.source:`, it is the context. Also the subject
 
 ## Create the cluster linking
 
-### Create config file to configure the 
+### Create config file to configure the cluster linking itself (this config will be used in all mirroring)
 ```shell
 docker-compose exec destKafka bash -c 'echo "\
 cluster.link.prefix=source.
