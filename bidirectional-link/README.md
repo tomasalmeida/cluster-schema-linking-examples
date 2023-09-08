@@ -160,7 +160,7 @@ echo "\
 bootstrap.servers=rightKafka:29092
 link.mode=BIDIRECTIONAL
 cluster.link.prefix=right.
-consumer.offset.sync.enable=true 
+consumer.offset.sync.enable=true
 " > /home/appuser/cl2.properties'
 
 docker-compose exec leftKafka bash -c '\
@@ -236,7 +236,7 @@ Verifying the results:
     docker-compose exec leftSchemaregistry \
         kafka-avro-console-consumer --bootstrap-server leftKafka:19092 \
         --property schema.registry.url=http://leftSchemaregistry:8085 \
-        --group disaster-group \
+        --group left-group \
         --from-beginning \
         --include ".*product" \
         --property print.timestamp=true \
@@ -269,7 +269,7 @@ Verifying the results:
     docker-compose exec rightSchemaregistry \
         kafka-avro-console-consumer --bootstrap-server rightKafka:29092 \
         --property schema.registry.url=http://rightSchemaregistry:8086 \
-        --group left-groupRight \
+        --group right-group \
         --from-beginning \
         --include ".*product" \
         --property print.timestamp=true \
@@ -282,5 +282,37 @@ Verifying the results:
 
 ### disaster mode
 
+```shell
+    docker-compose exec leftSchemaregistry \
+        kafka-avro-console-consumer --bootstrap-server leftKafka:19092 \
+        --property schema.registry.url=http://leftSchemaregistry:8085 \
+        --group disaster-group \
+        --from-beginning \
+        --include ".*product" \
+        --property print.timestamp=true \
+        --property print.offset=true \
+        --property print.partition=true \
+        --property print.headers=true \
+        --property print.key=true \
+        --property print.value=true
+```
 
-### Dummy mode (same consumer group in both sides)
+```shell
+docker-compose exec rightSchemaregistry \
+        kafka-avro-console-consumer --bootstrap-server rightKafka:29092 \
+        --property schema.registry.url=http://rightSchemaregistry:8086 \
+        --group disaster-group \
+        --from-beginning \
+        --include ".*product" \
+        --property print.timestamp=true \
+        --property print.offset=true \
+        --property print.partition=true \
+        --property print.headers=true \
+        --property print.key=true \
+        --property print.value=true
+```
+
+### Dummy mode (same consumer group on both sides)
+
+- data is sync'ed
+- offsets are not sync'ed fast enough
