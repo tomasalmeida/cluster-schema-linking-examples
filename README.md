@@ -14,3 +14,7 @@ The idea of this demo is to create a main cluster and a disaster recovery cluste
 ## [active-active-clusters](active-active-clusters/)
 
 The idea of this demo is to create two clusters where data is produced in both clusters and consumers consume data generated in both clusters. Cluster and schema linking will be used to send data from left cluster to right cluster and another link will send data from right to left.
+
+## [bidirectional-link](bidirectional-link/)
+
+CP 7.5 includes this new [bidirectional link](https://docs.confluent.io/platform/current/multi-dc-deployments/cluster-linking/configs.html#bidirectional-cluster-linking) option allowing to create one element that manages offsets and data.
