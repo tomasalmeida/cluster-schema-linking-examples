@@ -243,3 +243,9 @@ services:
       CONTROL_CENTER_UI_AUTOUPDATE_ENABLE: "false"
       CONTROL_CENTER_COMMAND_TOPIC_REPLICATION: 1
       CONTROL_CENTER_METRICS_TOPIC_REPLICATION: 1
+  java_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    stdin_open: true
+    tty: true

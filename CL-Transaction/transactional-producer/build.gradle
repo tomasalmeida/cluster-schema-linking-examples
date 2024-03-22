@@ -7,10 +7,13 @@ mainClassName = 'clients.TransactionalProducer'
 
 repositories {
     mavenCentral()
-    maven { url "http://packages.confluent.io/maven/" }
+    maven { url "http://packages.confluent.io/maven/" 
+            allowInsecureProtocol true
+        }
 }
 
 jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
         attributes 'Main-Class': 'clients.TransactionalProducer'
     }
@@ -23,9 +26,9 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 dependencies {
-    compile group: 'org.apache.kafka', name: 'kafka-clients', version: '2.8.0'
-    compile group: "io.confluent", name: "monitoring-interceptors", version: '6.0.0'
-    compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.30'
+    implementation group: 'org.apache.kafka', name: 'kafka-clients', version: '2.8.0'
+    implementation group: "io.confluent", name: "monitoring-interceptors", version: '6.0.0'
+    implementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.30'
 }
 
 application {

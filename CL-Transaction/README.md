@@ -1,4 +1,4 @@
-# Cluster Linking & Transaction 
+# Cluster Linking & Transaction
 
 The idea of this demo is to create a main cluster and a disaster recovery cluster, the `product` topic is created in the main cluster and it is replicated in the disaster recovery cluster using cluster linking. In the main cluster, a producer will produce data using transactions. In the recovery cluster, a consumer (`isolation.level=read_committed`) will read events from `product topic. When the producer is in the main of a transaction we will simulate cluster failover. Then stop the main cluster, promote the mirror topic, find the hanging transaction and abort it. Finally, we move producers to disaster recovery.
 
@@ -23,7 +23,6 @@ Two CP clusters are running:
 docker-compose exec mainKafka-1 kafka-topics --bootstrap-server mainKafka-1:19092 --topic product --create --partitions 1 --replication-factor 1
 docker-compose exec mainKafka-1 kafka-topics --bootstrap-server mainKafka-1:19092 --topic other-topic --create --partitions 1 --replication-factor 1
 ```
-
 
 ## Create the cluster linking (main to disaster cluster)
 
@@ -66,19 +65,6 @@ docker-compose exec disasterKafka-1 kafka-cluster-links --bootstrap-server disas
 
 Output is similar to `Link name: 'main-to-disaster-cl', link ID: 'CdDrHuV5Q5Sqyq0TCXnLsw', remote cluster ID: 'nBu7YnBiRsmDR_WilKe6Og', local cluster ID: '1wnpnQRORZ-C2tdxEStVtA', remote cluster available: 'true'`
 
-### Verifying consumer group offset is migrated
-
-```shell
-docker-compose exec disasterKafka-1 kafka-consumer-groups --bootstrap-server disasterKafka-1:29092 --group test-group --describe
-
-Consumer group 'test-group' has no active members.
-
-GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID     HOST            CLIENT-ID
-test-group      product         0          2               2               0               -               -               -
-```
-
-Same results from source cluster.
-
 ### Verifying data is migrated
 
 ```shell
@@ -90,6 +76,28 @@ docker-compose exec disasterKafka-1 \
 ```
 
 messages are migrated as expected
+
+## Produce transaction data.
+
+Remember to add the hosts in you /etc/host
+
+```
+127.0.0.1 disasterKafka-1
+127.0.0.1 disasterKafka-2
+127.0.0.1 disasterKafka-3
+127.0.0.1 mainKafka-1
+127.0.0.1 mainKafka-2
+127.0.0.1 mainKafka-3
+```
+
+```
+
+```
+
+```shell
+cd transactional-producer
+java -jar build/libs/transactional-producer.jar build/resources/main/client-disaster.properties tt1
+```
 
 ## Simulating a disaster
 
@@ -166,5 +174,4 @@ kafka-transactions --bootstrap-server disasterKafka-1:29092 abort --producer-id 
 ```
 
 The consumer on destination will start to consume again.
-
 
