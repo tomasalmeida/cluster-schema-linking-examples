@@ -1,6 +1,6 @@
-# Cluster Linking & Schema linking disaster recovery
+# Cluster Linking & Transaction 
 
-The idea of this demo is to create a main cluster and a disaster recovery cluster, the `product` schema and data are created in the main cluster/schema registry and it is replicated to the disaster recovery cluster using schema and cluster linking. We then, stop the main cluster, move consumers and producers to disaster recovery, restart the main cluster and move the data back
+The idea of this demo is to create a main cluster and a disaster recovery cluster, the `product` topic is created in the main cluster and it is replicated in the disaster recovery cluster using cluster linking. In the main cluster, a producer will produce data using transactions. In the recovery cluster, a consumer (`isolation.level=read_committed`) will read events from `product topic. When the producer is in the main of a transaction we will simulate cluster failover. Then stop the main cluster, promote the mirror topic, find the hanging transaction and abort it. Finally, we move producers to disaster recovery.
 
 ## Start the clusters
 
@@ -15,37 +15,15 @@ Two CP clusters are running:
 * Main Schema Register available at [http://localhost:8085](http://localhost:8085/)
 * Disaster Recovery Control Center available at [http://localhost:8086](http://localhost:8086/)
 
-## Create the topic `product` and the schema `product-value` in the main cluster
+## Create the topic `product`  in the main cluster
 
 ### Create the topic `product` (and another topic)
 
 ```shell
 docker-compose exec mainKafka-1 kafka-topics --bootstrap-server mainKafka-1:19092 --topic product --create --partitions 1 --replication-factor 1
-    docker-compose exec mainKafka-1 kafka-topics --bootstrap-server mainKafka-1:19092 --topic other-topic --create --partitions 1 --replication-factor 1
+docker-compose exec mainKafka-1 kafka-topics --bootstrap-server mainKafka-1:19092 --topic other-topic --create --partitions 1 --replication-factor 1
 ```
 
-### Open a consumer on main cluster
-
-```shell
-docker-compose exec mainKafka-1 \
-        kafka-console-consumer --bootstrap-server mainKafka-1:19092 \
-        --group test-group \
-        --from-beginning \
-        --topic product
-```
-
-### Check current offset
-
-```shell
-docker-compose exec mainKafka-1 kafka-consumer-groups --bootstrap-server mainKafka-1:19092 --group test-group --describe
-
-Consumer group 'test-group' has no active members.
-
-GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID     HOST            CLIENT-ID
-test-group      product         0          2               2               0               -               -               -
-```
-
-As you can see offset is 2 (two messages consumed).
 
 ## Create the cluster linking (main to disaster cluster)
 
