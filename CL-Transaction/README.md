@@ -79,13 +79,15 @@ messages are migrated as expected
 
 ## Produce transaction data.
 
-Produce data.
+Produce data. We are using an application provide by confluent in the following [link](https://developer.confluent.io/courses/architecture/transactions-hands-on/).
 
 ```shell
-docker exec -it java_app  bash
+docker exec -it java_app  bash \
 java -jar build/libs/transactional-producer.jar build/resources/main/client-main.properties tt1
 ```
+
 Press enter five tiemes. The output of the command will be similar to
+
 ```
 *** Begin Transaction ***
 *** transactional.id tt1 ***
@@ -104,16 +106,17 @@ Sent 4:4
 
 Produce data again but this time we will not commit the transaction. For example, just press enter two times.
 
-Validate transaction is ongoing 
+Validate transaction is ongoing
 
 ```shell
 docker-compose exec disasterKafka-1 \
 kafka-transactions --bootstrap-server mainKafka-1:19092 list
 ```
-Stop coordinator
+
+Stop coordinator broker.
 
 ```shell
-docker-compose stop mainKafka-1 mainControlCenter
+docker-compose stop <<mainKafka-1>> mainControlCenter
 ```
 
 ## Simulating a disaster
@@ -148,10 +151,6 @@ docker-compose exec disasterKafka-1 \
 
 The result should have the `State: STOPPED` as part of it.
 
-
-
-
-
 ### Find hanging transaction
 
 When the topic is promoted is time to find hanghing transacions
@@ -178,12 +177,13 @@ docker-compose exec disasterKafka-1 \
 kafka-transactions --bootstrap-server disasterKafka-1:29092 abort --producer-id 200 --start-offset 12 --partition 0 --topic product
 ```
 
-The consumer on destination will start to consume again.
 
-### Produce some data 
+### Produce some data
 
 ```shell
 docker-compose exec java_app \
 java -jar build/libs/transactional-producer.jar build/resources/main/client-main.properties tt1
 ```
+
+The consumer on destination will start to consume again.
 
