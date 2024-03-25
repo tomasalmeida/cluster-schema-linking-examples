@@ -79,24 +79,41 @@ messages are migrated as expected
 
 ## Produce transaction data.
 
-Remember to add the hosts in you /etc/host
-
-```
-127.0.0.1 disasterKafka-1
-127.0.0.1 disasterKafka-2
-127.0.0.1 disasterKafka-3
-127.0.0.1 mainKafka-1
-127.0.0.1 mainKafka-2
-127.0.0.1 mainKafka-3
-```
-
-```
-
-```
+Produce data.
 
 ```shell
-cd transactional-producer
-java -jar build/libs/transactional-producer.jar build/resources/main/client-disaster.properties tt1
+docker exec -it java_app  bash
+java -jar build/libs/transactional-producer.jar build/resources/main/client-main.properties tt1
+```
+Press enter five tiemes. The output of the command will be similar to
+```
+*** Begin Transaction ***
+*** transactional.id tt1 ***
+Sent 0:2
+
+Sent 1:6
+
+Sent 2:7
+
+Sent 3:7
+
+Sent 4:4
+
+*** Commit Transaction ***
+```
+
+Produce data again but this time we will not commit the transaction. For example, just press enter two times.
+
+Validate transaction is ongoing 
+
+```shell
+docker-compose exec disasterKafka-1 \
+kafka-transactions --bootstrap-server mainKafka-1:19092 list
+```
+Stop coordinator
+
+```shell
+docker-compose stop mainKafka-1 mainControlCenter
 ```
 
 ## Simulating a disaster
@@ -131,22 +148,9 @@ docker-compose exec disasterKafka-1 \
 
 The result should have the `State: STOPPED` as part of it.
 
-### Produce some data (the last lines with the product data)
-
-```shell
-docker-compose exec disasterSchemaregistry \
-   kafka-avro-console-producer \
-    --bootstrap-server disasterKafka-1:29092 \
-    --topic product \
-    --property value.schema.id=1 \
-    --property schema.registry.url=http://disasterSchemaregistry:8086 \
-    --property auto.register=false \
-    --property use.latest.version=true
 
 
-{ "product_id": 3, "product_name" : "tomato"} 
-{ "product_id": 4, "product_name" : "lettuce"}
-```
+
 
 ### Find hanging transaction
 
@@ -154,7 +158,7 @@ When the topic is promoted is time to find hanghing transacions
 
 ```shell
 docker-compose exec disasterKafka-1 \
-       kafka-transactions --bootstrap-server disasterKafka-1:29092 find-hanging --broker-id 2  --max-transaction-timeout 5
+kafka-transactions --bootstrap-server disasterKafka-1:29092 find-hanging --topic product --max-transaction-timeout 1
 ```
 
 Repit this command changing the broker-id
@@ -170,8 +174,16 @@ product	0        	2000      	2            	0               	12         	17110218
 It is time to abort hanging transaction
 
 ```shell
+docker-compose exec disasterKafka-1 \
 kafka-transactions --bootstrap-server disasterKafka-1:29092 abort --producer-id 200 --start-offset 12 --partition 0 --topic product
 ```
 
 The consumer on destination will start to consume again.
+
+### Produce some data 
+
+```shell
+docker-compose exec java_app \
+java -jar build/libs/transactional-producer.jar build/resources/main/client-main.properties tt1
+```
 
