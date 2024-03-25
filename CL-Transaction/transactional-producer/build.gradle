@@ -1,0 +1,37 @@
+plugins {
+  id 'java'
+  id 'application'
+}
+
+mainClassName = 'clients.TransactionalProducer'
+
+repositories {
+    mavenCentral()
+    maven { url "http://packages.confluent.io/maven/" 
+            allowInsecureProtocol true
+        }
+}
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': 'clients.TransactionalProducer'
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+sourceCompatibility = 11
+targetCompatibility = 11
+
+dependencies {
+    implementation group: 'org.apache.kafka', name: 'kafka-clients', version: '2.8.0'
+    implementation group: "io.confluent", name: "monitoring-interceptors", version: '6.0.0'
+    implementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.30'
+}
+
+application {
+    // Cambia 'com.example' al paquete donde se encuentra tu clase TransactionalProducer
+    mainClassName = 'clients.TransactionalProducer'
+}
