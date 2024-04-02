@@ -82,7 +82,8 @@ messages are migrated as expected
 Produce data. We are using an application provide by confluent in the following [link](https://developer.confluent.io/courses/architecture/transactions-hands-on/).
 
 ```shell
-docker exec -it java_app  bash \
+# enter the docker machine
+docker exec -it java_app \
 java -jar build/libs/transactional-producer.jar build/resources/main/client-main.properties tt1
 ```
 
