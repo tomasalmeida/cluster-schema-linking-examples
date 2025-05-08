@@ -29,5 +29,7 @@
                 \"default\": \"undefined\"
             }
         ]
-    }"
+    }",
+    "id": 5001,
+    "schemaType": "AVRO"
 }

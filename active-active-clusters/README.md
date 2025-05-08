@@ -20,8 +20,8 @@ Two CP clusters are running:
 ###  Create the schema `product-value` 
 
 ```shell
-    curl -v -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" --data @data/product.avsc http://localhost:8085/subjects/product-value/versions
-    curl -v -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" --data @data/product.avsc http://localhost:8086/subjects/product-value/versions
+    curl -s -v -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" --data @data/product.avsc http://localhost:8085/subjects/product-value/versions
+    curl -s -v -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" --data @data/product.avsc http://localhost:8086/subjects/product-value/versions
 ```
 
 ###  Create the topic `product` 
@@ -66,8 +66,8 @@ Two CP clusters are running:
 5. Check the schema is the same in the left and right cluster (right cluster has the schema with a different name)
 
 ```shell
-    curl http://localhost:8085/subjects/product-value/versions/1 | jq
-    curl http://localhost:8086/subjects/left.product-value/versions/1 | jq
+    curl -s http://localhost:8085/subjects/product-value/versions/1 | jq
+    curl -s http://localhost:8086/subjects/left.product-value/versions/1 | jq
 ```
 
 ### Create schema linking from right to left
@@ -104,8 +104,8 @@ Two CP clusters are running:
 5. Check the schema is the same in the left and right cluster (right cluster has the schema with a different name)
 
 ```shell
-    curl http://localhost:8086/subjects/product-value/versions/1 | jq
-    curl http://localhost:8085/subjects/right.product-value/versions/1 | jq
+    curl -s http://localhost:8086/subjects/product-value/versions/1 | jq
+    curl -s http://localhost:8085/subjects/right.product-value/versions/1 | jq
 ```
 
 ## Create the cluster linking
