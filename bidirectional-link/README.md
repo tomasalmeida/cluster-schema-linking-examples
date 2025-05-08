@@ -3,7 +3,7 @@
 ## Start the clusters
 
 ```shell
-    docker-compose up -d
+    docker compose up -d
 ``` 
 
 Two CP clusters are running:
@@ -24,8 +24,8 @@ Two CP clusters are running:
 
 ###  Create the topic `product` 
 ```shell
-    docker-compose exec leftKafka kafka-topics --bootstrap-server leftKafka:19092 --topic product --create --partitions 1 --replication-factor 1
-    docker-compose exec rightKafka kafka-topics --bootstrap-server rightKafka:29092 --topic product --create --partitions 1 --replication-factor 1
+    docker compose exec leftKafka kafka-topics --bootstrap-server leftKafka:19092 --topic product --create --partitions 1 --replication-factor 1
+    docker compose exec rightKafka kafka-topics --bootstrap-server rightKafka:29092 --topic product --create --partitions 1 --replication-factor 1
 ```
 
 ## Create the schema linking
@@ -34,13 +34,13 @@ Two CP clusters are running:
 
 1. Create config file 
 ```shell
-    docker-compose exec leftSchemaregistry bash -c '\
+    docker compose exec leftSchemaregistry bash -c '\
     echo "schema.registry.url=http://rightSchemaregistry:8086" > /home/appuser/config.txt'
 ```
 
 2. Create the schema exporter 
 ```shell
-    docker-compose exec leftSchemaregistry bash -c '\
+    docker compose exec leftSchemaregistry bash -c '\
     schema-exporter --create --name left-to-right-sl --subjects "product-value" \
     --config-file ~/config.txt \
     --schema.registry.url http://leftSchemaregistry:8085 \
@@ -50,14 +50,14 @@ Two CP clusters are running:
 
 3. Validate exporter is working
 ```shell
-    docker-compose exec leftSchemaregistry bash -c '\
+    docker compose exec leftSchemaregistry bash -c '\
     schema-exporter --list \
     --schema.registry.url http://leftSchemaregistry:8085'
 ````
 
 4. Check the exporter is running
 ```shell
-    docker-compose exec leftSchemaregistry bash -c '\
+    docker compose exec leftSchemaregistry bash -c '\
     schema-exporter --get-status --name left-to-right-sl --schema.registry.url http://leftSchemaregistry:8085' | jq
 ```
 
@@ -72,13 +72,13 @@ Two CP clusters are running:
 
 1. Create config file 
 ```shell
-    docker-compose exec rightSchemaregistry bash -c '\
+    docker compose exec rightSchemaregistry bash -c '\
     echo "schema.registry.url=http://leftSchemaregistry:8085" > /home/appuser/config.txt'
 ```
 
 2. Create the schema exporter 
 ```shell
-    docker-compose exec rightSchemaregistry bash -c '\
+    docker compose exec rightSchemaregistry bash -c '\
     schema-exporter --create --name right-to-left-sl --subjects "product-value" \
     --config-file ~/config.txt \
     --schema.registry.url http://rightSchemaregistry:8086 \
@@ -88,14 +88,14 @@ Two CP clusters are running:
 
 3. Validate exporter is working
 ```shell
-    docker-compose exec rightSchemaregistry bash -c '\
+    docker compose exec rightSchemaregistry bash -c '\
     schema-exporter --list \
     --schema.registry.url http://rightSchemaregistry:8086'
 ````
 
 4. Check the exporter is running
 ```shell
-    docker-compose exec rightSchemaregistry bash -c '\
+    docker compose exec rightSchemaregistry bash -c '\
     schema-exporter --get-status --name right-to-left-sl --schema.registry.url http://rightSchemaregistry:8086' | jq
 ```
 
@@ -112,7 +112,7 @@ Two CP clusters are running:
 
 1. Create config file to configure the cluster linking
 ```shell
-docker-compose exec rightKafka bash -c '\
+docker compose exec rightKafka bash -c '\
 echo "\
 bootstrap.servers=leftKafka:19092
 link.mode=BIDIRECTIONAL
@@ -120,13 +120,13 @@ cluster.link.prefix=left.
 consumer.offset.sync.enable=true
 " > /home/appuser/cl.properties'
 
-docker-compose exec rightKafka bash -c '\
+docker compose exec rightKafka bash -c '\
 echo "{\"groupFilters\": [{\"name\": \"*\",\"patternType\": \"LITERAL\",\"filterType\": \"INCLUDE\"}]}" > /home/appuser/cl-offset-groups.json'
 ```
 
 2. Create the cluster link on the *destination* cluster. We are using some extra [configuration options](https://docs.confluent.io/platform/current/multi-dc-deployments/cluster-linking/configs.html#configuration-options).
 ```shell
-    docker-compose exec rightKafka \
+    docker compose exec rightKafka \
     kafka-cluster-links --bootstrap-server rightKafka:29092 \
     --create --link bidirectional-link \
     --config-file /home/appuser/cl.properties \
@@ -135,7 +135,7 @@ echo "{\"groupFilters\": [{\"name\": \"*\",\"patternType\": \"LITERAL\",\"filter
 
 3. Create the mirroring
 ```shell
-    docker-compose exec rightKafka \
+    docker compose exec rightKafka \
     kafka-mirrors --create \
     --source-topic product \
     --mirror-topic left.product \
@@ -145,7 +145,7 @@ echo "{\"groupFilters\": [{\"name\": \"*\",\"patternType\": \"LITERAL\",\"filter
 
 4. Verifying cluster linking is up
 ```shell
-    docker-compose exec rightKafka \
+    docker compose exec rightKafka \
     kafka-cluster-links --bootstrap-server rightKafka:29092 --link  bidirectional-link --list
  ````
 
@@ -155,7 +155,7 @@ Output is similar to `Link name: 'bidirectional-link', link ID: 'AMw2VoNJRya3CgM
 
 1. Create config file to configure the cluster linking
 ```shell
-docker-compose exec leftKafka bash -c '\
+docker compose exec leftKafka bash -c '\
 echo "\
 bootstrap.servers=rightKafka:29092
 link.mode=BIDIRECTIONAL
@@ -163,13 +163,13 @@ cluster.link.prefix=right.
 consumer.offset.sync.enable=true
 " > /home/appuser/cl2.properties'
 
-docker-compose exec leftKafka bash -c '\
+docker compose exec leftKafka bash -c '\
 echo "{\"groupFilters\": [{\"name\": \"*\",\"patternType\": \"LITERAL\",\"filterType\": \"INCLUDE\"}]}" > /home/appuser/cl2-offset-groups.json'
 ```
 
 2. Create the cluster link on the *destination* cluster. We are using some extra [configuration options](https://docs.confluent.io/platform/current/multi-dc-deployments/cluster-linking/configs.html#configuration-options).
 ```shell
-    docker-compose exec leftKafka \
+    docker compose exec leftKafka \
     kafka-cluster-links --bootstrap-server leftKafka:19092 \
     --create --link bidirectional-link \
     --config-file /home/appuser/cl2.properties \
@@ -178,7 +178,7 @@ echo "{\"groupFilters\": [{\"name\": \"*\",\"patternType\": \"LITERAL\",\"filter
 
 3. Create the mirroring
 ```shell
-    docker-compose exec leftKafka \
+    docker compose exec leftKafka \
     kafka-mirrors --create \
     --source-topic product \
     --mirror-topic right.product \
@@ -188,7 +188,7 @@ echo "{\"groupFilters\": [{\"name\": \"*\",\"patternType\": \"LITERAL\",\"filter
 
 4. Verifying cluster linking is up
 ```shell
-    docker-compose exec leftKafka \
+    docker compose exec leftKafka \
     kafka-cluster-links --bootstrap-server leftKafka:19092 --link bidirectional-link --list
  ````
 
@@ -199,9 +199,9 @@ Output is similar to `Link name: 'bidirectional-link', link ID: 'AMw2VoNJRya3CgM
 ### Check again the created links
 
 ```shell
- docker-compose exec leftKafka \
+ docker compose exec leftKafka \
     kafka-cluster-links --bootstrap-server leftKafka:19092  --link bidirectional-link --list
-docker-compose exec rightKafka \
+docker compose exec rightKafka \
     kafka-cluster-links --bootstrap-server rightKafka:29092 --link  bidirectional-link --list
 ```
 
@@ -217,7 +217,7 @@ Verifying the results:
 
 1. Producer produces to left cluster
 ```shell
-   docker-compose exec leftSchemaregistry kafka-avro-console-producer \
+   docker compose exec leftSchemaregistry kafka-avro-console-producer \
     --bootstrap-server leftKafka:19092 \
     --topic product \
     --property value.schema.id=1 \
@@ -229,11 +229,10 @@ Verifying the results:
     { "product_id": 2, "product_name" : "beansLeft"} 
 ```
 
-
 2. Consumer consumes from left cluster
 
 ```shell
-    docker-compose exec leftSchemaregistry \
+    docker compose exec leftSchemaregistry \
         kafka-avro-console-consumer --bootstrap-server leftKafka:19092 \
         --property schema.registry.url=http://leftSchemaregistry:8085 \
         --group left-group \
@@ -247,10 +246,9 @@ Verifying the results:
         --property print.value=true
 ```
 
-
 3. Producer produces to right cluster
 ```shell
-   docker-compose exec rightSchemaregistry kafka-avro-console-producer \
+   docker compose exec rightSchemaregistry kafka-avro-console-producer \
     --bootstrap-server rightKafka:29092 \
     --topic product \
     --property value.schema.id=1 \
@@ -266,7 +264,7 @@ Verifying the results:
 4. Consumer consumes from right cluster
 
 ```shell
-    docker-compose exec rightSchemaregistry \
+    docker compose exec rightSchemaregistry \
         kafka-avro-console-consumer --bootstrap-server rightKafka:29092 \
         --property schema.registry.url=http://rightSchemaregistry:8086 \
         --group right-group \
@@ -280,10 +278,18 @@ Verifying the results:
         --property print.value=true
 ```
 
+5. Checking the consumer offsets
+
+```shell
+    docker compose exec leftKafka kafka-consumer-groups --bootstrap-server leftKafka:19092 --describe --group left-group
+    docker compose exec leftKafka kafka-consumer-groups --bootstrap-server leftKafka:19092 --describe --group right-group
+```
+Offsets are synchronised.
+
 ### disaster mode
 
 ```shell
-    docker-compose exec leftSchemaregistry \
+    docker compose exec leftSchemaregistry \
         kafka-avro-console-consumer --bootstrap-server leftKafka:19092 \
         --property schema.registry.url=http://leftSchemaregistry:8085 \
         --group disaster-group \
@@ -298,7 +304,7 @@ Verifying the results:
 ```
 
 ```shell
-docker-compose exec rightSchemaregistry \
+docker compose exec rightSchemaregistry \
         kafka-avro-console-consumer --bootstrap-server rightKafka:29092 \
         --property schema.registry.url=http://rightSchemaregistry:8086 \
         --group disaster-group \
