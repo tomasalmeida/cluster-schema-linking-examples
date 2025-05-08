@@ -24,6 +24,7 @@ services:
       - srcZookeeper
     ports:
       - "19092:19092"
+      - "8090:8090"
     environment:
       KAFKA_ZOOKEEPER_CONNECT: "srcZookeeper:2181"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
@@ -36,7 +37,7 @@ services:
       KAFKA_DELETE_TOPIC_ENABLE: "true"
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
       KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
-      CONFLUENT_HTTP_SERVER_LISTENERS: "http://0.0.0.0:8090"
+      # CONFLUENT_HTTP_SERVER_LISTENERS: "http://0.0.0.0:8090"
       CONFLUENT_SCHEMA_REGISTRY_URL: "http://srcSchemaregistry:8085" #8081
   srcSchemaregistry:
     image: ${REPOSITORY}/cp-schema-registry:${CONFLUENT_DOCKER_TAG}
