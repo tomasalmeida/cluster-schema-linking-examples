@@ -19,6 +19,11 @@ The idea of this demo is to create two clusters where data is produced in both c
 
 CP 7.5 includes this new [bidirectional link](https://docs.confluent.io/platform/current/multi-dc-deployments/cluster-linking/configs.html#bidirectional-cluster-linking) option allowing to create one element that manages offsets and data.
 
+## [bidirectional-link-reverse](bidirectional-link-reverse/)
+
+CP 7.7 includes this new [bidirectional link](https://docs.confluent.io/platform/current/multi-dc-deployments/cluster-linking/configs.html#bidirectional-cluster-linking) with `reverse` option allowing to create one element that manages offsets and data.
+
+
 ## [Cluster Linking & Transaction](CL-Transaction/)
 
 Cluster Linking has not yet been fully tested to mirror topics that contain records produced using the Kafka transactions feature. Therefore, using Cluster Linking to mirror such topics is not supported and not recommended. But, is there a way to detect transaction and abort in a DR cluster?
