@@ -1,0 +1,196 @@
+---
+services:
+  ################  ################  ################  ################
+  #                            LEFT CLUSTER
+  ################  ################  ################  ################
+
+  leftKafka:
+    image: ${REPOSITORY}/cp-server:${CONFLUENT_DOCKER_TAG}
+    hostname: leftKafka
+    container_name: leftKafka
+    ports:
+      - "19092:19092"
+      - "19093:19093"   # Controller port
+      - "9101:9101"     # JMX port (opcional)
+    environment:
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
+      CONFLUENT_HTTP_SERVER_LISTENERS: "http://0.0.0.0:8090"
+      CONFLUENT_SCHEMA_REGISTRY_URL: "http://leftSchemaregistry:8085" #8081
+      KAFKA_INBOUND_INTERNAL_LISTENER_NAME: PLAINTEXT
+###
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@leftKafka:19093
+      KAFKA_LISTENERS: PLAINTEXT://leftKafka:19092,CONTROLLER://leftKafka:19093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://leftKafka:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_CONFLUENT_CLUSTER_LINK_ENABLE: "true"
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      CONFLUENT_METRICS_ENABLE: "true"
+      CONFLUENT_SUPPORT_CUSTOMER_ID: "anonymous"
+      CLUSTER_ID: "9a-zpLZwSmu0bDaAPlogRQ"  # Usa tu UUID generado para este cluster
+      KAFKA_ADMIN_CLIENT_REQUEST_TIMEOUT_MS: 30000
+      KAFKA_CLUSTER_LINK_REMOTE_CLUSTER_ID: "w57t5FJLTwSjvAk8ZGJclQ"   # ID del cluster right
+      KAFKA_CLUSTER_LINK_REMOTE_BOOTSTRAP_SERVERS: "rightKafka:29092"
+      KAFKA_CLUSTER_LINK_REMOTE_SECURITY_PROTOCOL: "PLAINTEXT"
+      KAFKA_LOG4J_LOGGERS: "org.apache.kafka.connect.cluster.link=DEBUG,org.apache.kafka.clients.admin=DEBUG"
+      KAFKA_CONFLUENT_CLUSTER_LINK_METADATA_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_CLUSTER_LINK_METADATA_TOPIC_MIN_INSYNC_REPLICAS: 1
+
+    networks:
+      - kafka-net
+    volumes:
+      - left_kafka_data:/var/lib/kafka/data
+  leftSchemaregistry:
+    image: ${REPOSITORY}/cp-schema-registry:${CONFLUENT_DOCKER_TAG}
+    container_name: leftSchemaregistry
+    restart: always
+    depends_on:
+      - leftKafka
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "leftKafka:19092"
+      SCHEMA_REGISTRY_HOST_NAME: leftSchemaregistry
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8085"
+      SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: PLAINTEXT
+      SCHEMA_REGISTRY_MODE_MUTABILITY: "true"
+      SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: INFO
+      SCHEMA_REGISTRY_RESOURCE_EXTENSION_CLASS: io.confluent.schema.exporter.SchemaExporterResourceExtension
+      SCHEMA_REGISTRY_KAFKASTORE_UPDATE_HANDLERS: io.confluent.schema.exporter.storage.SchemaExporterUpdateHandler
+      SCHEMA_REGISTRY_PASSWORD_ENCODER_SECRET: mysecret
+    ports:
+      - 8085:8085
+    networks:
+      - kafka-net
+  leftControlCenter:
+    image: ${REPOSITORY}/cp-enterprise-control-center:${CONFLUENT_DOCKER_TAG}
+    hostname: leftControlCenter
+    container_name: leftControlCenter
+    restart: always
+    depends_on:
+      - leftKafka
+      - leftSchemaregistry
+    ports:
+      - "19021:9021"
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: leftKafka:19092
+      CONTROL_CENTER_STREAMS_NUM_STREAM_THREADS: 4
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://leftSchemaregistry:8085"
+      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+      CONTROL_CENTER_UI_AUTOUPDATE_ENABLE: "false"
+      CONTROL_CENTER_COMMAND_TOPIC_REPLICATION: 1
+      CONTROL_CENTER_METRICS_TOPIC_REPLICATION: 1
+      CONTROL_CENTER_KAFKA_LEFT_BOOTSTRAP_SERVERS: 'leftKafka:19092'
+    networks:
+      - kafka-net
+  ################  ################  ################  ################
+  #                           RIGHT CLUSTER
+  ################  ################  ################  ################
+
+  rightKafka:
+    image: ${REPOSITORY}/cp-server:${CONFLUENT_DOCKER_TAG}
+    hostname: rightKafka
+    container_name: rightKafka
+    ports:
+      - "29092:29092"
+      - "29093:29093"   # Controller port
+      - "9102:9102"     # JMX port (opcional)
+    environment:
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
+      CONFLUENT_HTTP_SERVER_LISTENERS: "http://0.0.0.0:8091"
+      CONFLUENT_SCHEMA_REGISTRY_URL: "http://leftSchemaregistry:8086" #8081
+      KAFKA_INBOUND_INTERNAL_LISTENER_NAME: PLAINTEXT
+###
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 2@rightKafka:29093
+      KAFKA_LISTENERS: PLAINTEXT://rightKafka:29092,CONTROLLER://rightKafka:29093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://rightKafka:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_CONFLUENT_CLUSTER_LINK_ENABLE: "true"
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      CONFLUENT_METRICS_ENABLE: "true"
+      CONFLUENT_SUPPORT_CUSTOMER_ID: "anonymous"
+      CLUSTER_ID: "w57t5FJLTwSjvAk8ZGJclQ"  # Usa tu UUID generado para este cluster
+      KAFKA_ADMIN_CLIENT_REQUEST_TIMEOUT_MS: 30000
+      KAFKA_CLUSTER_LINK_REMOTE_CLUSTER_ID: "9a-zpLZwSmu0bDaAPlogRQ"   # ID del cluster left
+      KAFKA_CLUSTER_LINK_REMOTE_BOOTSTRAP_SERVERS: "leftKafka:19092"
+      KAFKA_CLUSTER_LINK_REMOTE_SECURITY_PROTOCOL: "PLAINTEXT"
+      KAFKA_LOG4J_LOGGERS: "org.apache.kafka.connect.cluster.link=DEBUG,org.apache.kafka.clients.admin=DEBUG"
+      KAFKA_CONFLUENT_CLUSTER_LINK_METADATA_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_CLUSTER_LINK_METADATA_TOPIC_MIN_INSYNC_REPLICAS: 1
+    networks:
+      - kafka-net
+    volumes:
+      - right_kafka_data:/var/lib/kafka/data
+  rightSchemaregistry:
+    image: ${REPOSITORY}/cp-schema-registry:${CONFLUENT_DOCKER_TAG}
+    container_name: rightSchemaregistry
+    restart: always
+    depends_on:
+      - rightKafka
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "rightKafka:29092"
+      SCHEMA_REGISTRY_HOST_NAME: rightSchemaregistry
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8086"
+      SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: PLAINTEXT
+      SCHEMA_REGISTRY_MODE_MUTABILITY: "true"
+      SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: INFO
+      SCHEMA_REGISTRY_GROUP_ID: schema-registry-right #schema.registry.group.id
+      SCHEMA_REGISTRY_RESOURCE_EXTENSION_CLASS: io.confluent.schema.exporter.SchemaExporterResourceExtension
+      SCHEMA_REGISTRY_KAFKASTORE_UPDATE_HANDLERS: io.confluent.schema.exporter.storage.SchemaExporterUpdateHandler
+      SCHEMA_REGISTRY_PASSWORD_ENCODER_SECRET: mysecret
+    ports:
+      - 8086:8086
+    networks:
+      - kafka-net
+  rightControlCenter:
+    image: ${REPOSITORY}/cp-enterprise-control-center:${CONFLUENT_DOCKER_TAG}
+    hostname: rightControlCenter
+    container_name: rightControlCenter
+    restart: always
+    depends_on:
+      - rightKafka
+      - rightSchemaregistry
+    ports:
+      - "29021:9021"
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: rightKafka:29092
+      CONTROL_CENTER_STREAMS_NUM_STREAM_THREADS: 4
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://rightSchemaregistry:8086"
+      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+      CONTROL_CENTER_UI_AUTOUPDATE_ENABLE: "false"
+      CONTROL_CENTER_COMMAND_TOPIC_REPLICATION: 1
+      CONTROL_CENTER_METRICS_TOPIC_REPLICATION: 1
+      CONTROL_CENTER_KAFKA_RIGHT_BOOTSTRAP_SERVERS: 'rightKafka:29092'
+    networks:
+      - kafka-net
+networks:
+  kafka-net:
+    driver: bridge
+volumes:
+  left_kafka_data:
+  right_kafka_data:
